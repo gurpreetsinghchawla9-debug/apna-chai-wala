@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apna Chai Wala | Digital Menu</title>
+<style>
+:root{--red:#b83238;--dark:#241b19;--cream:#fff8ed;--gold:#d8a64b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--dark);font-family:Arial,sans-serif}
+header{background:var(--dark);color:white;text-align:center;padding:28px 15px}
+header h1{margin:0;font-size:30px;letter-spacing:1px}
+header p{margin:8px 0 0;color:#e8cda7}
+.hero{padding:22px 16px;text-align:center;background:#f2e2cb}
+.hero h2{margin:0 0 8px;color:var(--red)}
+.hero p{margin:0;color:#65534a}
+.toolbar{position:sticky;top:0;background:var(--cream);padding:12px;z-index:5;box-shadow:0 2px 8px #0001}
+#search{width:100%;padding:13px;border:1px solid #d8c8b4;border-radius:12px;font-size:16px}
+nav{display:flex;gap:8px;overflow:auto;padding:12px}
+nav button{white-space:nowrap;border:0;border-radius:22px;padding:10px 15px;background:#eadbc8;color:#402b25}
+nav button.active{background:var(--red);color:white}
+main{max-width:900px;margin:auto;padding:8px 14px 120px}
+.category{margin:22px 0}
+.category h2{font-size:21px;color:var(--red);border-bottom:2px solid #e6c9a9;padding-bottom:9px}
+.item{background:white;border:1px solid #eee0ce;border-radius:14px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;gap:12px;align-items:center;box-shadow:0 3px 9px #00000008}
+.item h3{font-size:16px;margin:0 0 6px}
+.item small{color:#806f61}
+.item select{max-width:125px;padding:8px;border:1px solid #ddc9b3;border-radius:8px;background:white}
+.item button,.primary{background:var(--red);color:white;border:0;border-radius:9px;padding:10px 13px;font-weight:bold}
+.price{font-weight:bold;color:var(--red);margin:5px 0}
+.promo{background:#30211d;color:#fff;padding:16px;border-radius:14px;margin:18px 0}
+.promo p{margin:6px 0;color:#f5dfc2}
+.cartbar{position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 16px;box-shadow:0 -3px 15px #0002;display:flex;justify-content:space-between;align-items:center;z-index:10}
+.cartbar button{background:var(--red);color:white;border:0;padding:13px 20px;border-radius:10px;font-weight:bold}
+.panel{background:white;padding:16px;border-radius:14px;margin:15px 0}
+.panel input,.panel textarea,.panel select{width:100%;padding:12px;margin:7px 0 12px;border:1px solid #ddcbbb;border-radius:9px;font-size:15px}
+#cartItems{padding-left:20px}
+#qr{width:210px;max-width:100%;display:block;margin:12px auto;border-radius:10px}
+.hidden{display:none}
+footer{text-align:center;padding:25px;color:#806f61;font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>APNA CHAI WALA ☕</h1>
+  <p>Chai • Coffee • Food • Good Times</p>
+</header>
+
+<section class="hero">
+  <h2>Welcome to Apna Chai Wala</h2>
+  <p>Explore our menu, add your favourites and place your order.</p>
+</section>
+
+<div class="toolbar">
+  <input id="search" placeholder="Search chai, coffee, pizza..." oninput="renderMenu()">
+</div>
+<nav id="categories"></nav>
+<main id="menu"></main>
+
+<section class="panel" id="checkout">
+  <h2>Your Order</h2>
+  <ul id="cartItems"><li>Your cart is empty.</li></ul>
+  <h3 id="total">Total: ₹0</h3>
+
+  <label>Your name</label>
+  <input id="customer" placeholder="Enter your name">
+
+  <label>Order type</label>
+  <select id="orderType">
+    <option value="Takeaway">Takeaway</option>
+    <option value="Dine-in">Dine-in</option>
+  </select>
+
+  <label>Special instructions (optional)</label>
+  <textarea id="notes" placeholder="Any special request?"></textarea>
+
+  <h3>Payment method</h3>
+  <select id="payment" onchange="paymentChanged()">
+    <option value="Cash">Cash</option>
+    <option value="UPI">UPI</option>
+  </select>
+
+  <div id="upiBox" class="hidden">
+    <p><b>Scan this QR code to pay.</b></p>
+    <img id="qr" src="upi-qr.PNG" alt="Apna Chai Wala UPI QR">
+    <p style="text-align:center">After paying, select your payment screenshot below.</p>
+    <input type="file" id="proof" accept="image/*" onchange="previewProof()">
+    <img id="proofPreview" class="hidden" style="width:150px;border-radius:8px">
+    <p><small>Screenshot is for manager verification. It does not automatically confirm payment.</small></p>
+  </div>
+
+  <button class="primary" style="width:100%;padding:15px" onclick="placeOrder()">Place Order on WhatsApp</button>
+</section>
+
+<footer>
+  Apna Chai Wala · An outlet of Amber Tree Cafe<br>
+  GST shall be charged extra.
+</footer>
+
+<div class="cartbar">
+  <span><b id="barCount">0 items</b><br><span id="barTotal">₹0</span></span>
+  <button onclick="document.getElementById('checkout').scrollIntoView({behavior:'smooth'})">View Cart →</button>
+</div>
+
+<script>
+const manager = "8528181524";
+const menuData = [
+["Chai",[
+["Elaichi",[29,59,69],["Small","Medium","Large"]],
+["Ginger + Elaichi",[34,69,79],["Small","Medium","Large"]],
+["Rose",[39,79,89],["Small","Medium","Large"]],
+["Chocolate",[39,79,89],["Small","Medium","Large"]],
+["Paan",[39,79,89],["Small","Medium","Large"]]
+]],
+["Premium Chai",[
+["Masala Chai",[49,89,99],["Small","Medium","Large"]],
+["Laung + Elaichi Chai",[49,89,99],["Small","Medium","Large"]],
+["Cinnamon Chai",[59,99,109],["Small","Medium","Large"]],
+["Special Chai",[59,99,109],["Small","Medium","Large"]],
+["Gur Wali Chai",[59,99,109],["Small","Medium","Large"]]
+]],
+["Hot Coffee",[
+["Jabardast Coffee",[39,79,89],["Small","Medium","Large"]],
+["Jabardast Chocolate Coffee",[49,99,109],["Small","Medium","Large"]]
+]],
+["Cold Coffee",[
+["Desi Cold Coffee",[99,109],["Medium","Large"]],
+["Special Cold Coffee",[119,129],["Medium","Large"]],
+["Oreo Cold Coffee",[129,139],["Medium","Large"]],
+["Choco Chips Coffee",[139,149],["Medium","Large"]]
+]],
+["Premium Cold Coffee",[
+["Special Cold Coffee",[119,129],["Medium","Large"]]
+]],
+["Sparkle Drink",[
+["Lemon Soda",[89,109],["Medium","Large"]],
+["Virgin Mojito",[109,129],["Medium","Large"]],
+["Green Apple Mojito",[109,129],["Medium","Large"]],
+["Watermelon Mojito",[119,139],["Medium","Large"]],
+["Blue Curacao Mojito",[129,149],["Medium","Large"]],
+["Kala Khatta Mojito",[149,169],["Medium","Large"]]
+]],
+["Shake",[
+["Oreo Shake",[129,149],["Medium","Large"]],
+["Kit-Kat Shake",[129,149],["Medium","Large"]],
+["Butterscotch Shake",[149,169],["Medium","Large"]],
+["Strawberry Shake",[149,169],["Medium","Large"]],
+["Chocolate Shake",[149,169],["Medium","Large"]],
+["Tutti Frutti Shake",[159,179],["Medium","Large"]],
+["Red Velvet Shake",[169,189],["Medium","Large"]]
+]],
+["Sandwich",[
+["Veg Sandwich",[79,129],["Medium","Large"]],
+["Corn Sandwich",[89,139],["Medium","Large"]],
+["Paneer TakaTak Sandwich",[99,159],["Medium","Large"]]
+]],
+["Premium Sandwich",[
+["Paneer Tikka Sandwich",[109,179],["Medium","Large"]],
+["Mushroom Makhani Sandwich",[109,179],["Medium","Large"]],
+["ACW Special Sandwich",[129,199],["Medium","Large"]],
+["Punjabi Sandwich",[129,199],["Medium","Large"]],
+["Gym Lover Sandwich",[119,189],["Medium","Large"]]
+]],
+["Classic Pizza",[
+["Margherita",[109,249,349],["Small","Medium","Large"]],
+["Chankila Corn",[109,249,349],["Small","Medium","Large"]],
+["Tikka Paneer",[149,289,389],["Small","Medium","Large"]],
+["Onion Capsicum & Paneer",[149,289,389],["Small","Medium","Large"]]
+]],
+["Premium Pizza",[
+["Farmhouse",[179,349,449],["Small","Medium","Large"]],
+["Paneer Tikka",[179,349,449],["Small","Medium","Large"]],
+["Peri-Peri",[199,399,499],["Small","Medium","Large"]],
+["Paneer Taka Tak",[199,399,499],["Small","Medium","Large"]]
+]],
+["Garlic Bread",[
+["Simple Garlic Bread",[119],["Regular"]],
+["Sweet Corn, Jalapenos With Cheese",[139],["Regular"]],
+["Paneer Taka Tak Garlic Bread",[149],["Regular"]]
+]],
+["Burger",[
+["Aloo Tikki Burger",[49,73],["1 Tikki","2 Tikki"]],
+["Makhani Burger",[79,108],["1 Tikki","2 Tikki"]],
+["Punjabi Burger",[99,128],["1 Tikki","2 Tikki"]],
+["Paneer Wala Burger",[109,148],["1 Tikki","2 Tikki"]]
+]],
+["Fries",[
+["Desi Fries",[99,109],["Medium","Large"]],
+["Peri-Peri Fries",[128,148],["Medium","Large"]],
+["Cheesy Fries",[133,153],["Medium","Large"]],
+["Fully Loaded Fries",[138,158],["Medium","Large"]]
+]],
+["Tasty Bites",[
+["Cheese Samosa",[99,149],["Medium","Family"]],
+["Veg Fingers",[99,149],["Medium","Family"]],
+["Smiles",[99,149],["Medium","Family"]],
+["Onion Pakora",[99,149],["Medium","Family"]]
+]],
+["Pasta",[
+["Red Sauce Pasta",[159],["Regular"]],
+["White Sauce Pasta",[169],["Regular"]],
+["Baked Cheese Pasta",[179],["Regular"]]
+]],
+["Wraps",[
+["Aloo Tikki Wrap",[129],["Regular"]],
+["Paneer Masala Wrap",[159],["Regular"]],
+["Spicy Paneer Wrap",[179],["Regular"]]
+]],
+["Maggi",[
+["Chalti Phirti Maggi",[59],["Regular"]],
+["Punjabi Masala Maggi",[79],["Regular"]]
+]],
+["Buns",[
+["Maska Bun",[39],["Regular"]],
+["Punjabi Bun",[49],["Regular"]]
+]],
+["Add-ons",[
+["Ice Cream Single Scoop",[29],["Single"]],
+["Ice Cream Double Scoop",[39],["Double"]],
+["Cheese Single Slice",[29],["Single"]],
+["Cheese Double Slice",[39],["Double"]]
+]],
+["Special Offers",[
+["Pizza - Veg Pack of 4 (Mon-Fri)",[349],["Pack of 4"]],
+["Garlic Bread Sticks + Dip + Coke (Mon-Fri)",[170],["Combo"]],
+["Chai",[29],["Regular"]],
+["Coffee",[39],["Regular"]],
+["Cold Coffee",[99],["Regular"]],
+["Pizza",[109],["Regular"]],
+["Sandwich",[79],["Regular"]],
+["Burger",[49],["Regular"]]
+]]
+];
+
+let cart=[];
+let activeCategory="All";
+
+function money(n){return "₹"+n}
+function renderCategories(){
+ const nav=document.getElementById("categories");
+ nav.innerHTML="";
+ ["All",...menuData.map(x=>x[0])].forEach(cat=>{
+  const b=document.createElement("button");
+  b.textContent=cat;b.className=activeCategory===cat?"active":"";
+  b.onclick=()=>{activeCategory=cat;renderCategories();renderMenu()};
+  nav.appendChild(b);
+ });
+}
+function renderMenu(){
+ const root=document.getElementById("menu");
+ root.innerHTML="";
+ const q=document.getElementById("search").value.toLowerCase();
+ menuData.filter(c=>activeCategory==="All"||c[0]===activeCategory)
+ .forEach(([cat,items])=>{
+  const filtered=items.filter(x=>x[0].toLowerCase().includes(q));
+  if(!filtered.length)return;
+  const section=document.createElement("section");
+  section.className="category";
+  section.innerHTML="<h2>"+cat+"</h2>";
+  filtered.forEach(([name,prices,sizes])=>{
+   const item=document.createElement("div");item.className="item";
+   const opts=sizes.map((s,i)=>`<option value="${i}">${s} · ₹${prices[i]}</option>`).join("");
+   item.innerHTML=`<div style="flex:1"><h3>${name}</h3><div class="price">From ${money(Math.min(...prices))}</div><small>Select your size</small></div><div><select>${opts}</select><button>Add +</button></div>`;
+   item.querySelector("button").onclick=()=>{
+    const i=Number(item.querySelector("select").value);
+    cart.push({name,size:sizes[i],price:prices[i]});
+    updateCart();
+   };
+   section.appendChild(item);
+  });
+  root.appendChild(section);
+ });
+}
+function updateCart(){
+ const list=document.getElementById("cartItems");
+ list.innerHTML="";
+ cart.forEach((x,i)=>{
+  const li=document.createElement("li");
+  li.innerHTML=`${x.name} (${x.size}) — ₹${x.price} <button onclick="removeItem(${i})">×</button>`;
+  list.appendChild(li);
+ });
+ if(!cart.length)list.innerHTML="<li>Your cart is empty.</li>";
+ const total=cart.reduce((s,x)=>s+x.price,0);
+ document.getElementById("total").textContent="Total: "+money(total)+" + GST";
+ document.getElementById("barTotal").textContent=money(total);
+ document.getElementById("barCount").textContent=cart.length+" items";
+}
+function removeItem(i){cart.splice(i,1);updateCart()}
+function paymentChanged(){
+ document.getElementById("upiBox").classList.toggle("hidden",document.getElementById("payment").value!=="UPI");
+}
+function previewProof(){
+ const f=document.getElementById("proof").files[0];
+ if(!f)return;
+ const img=document.getElementById("proofPreview");
+ img.src=URL.createObjectURL(f);img.classList.remove("hidden");
+}
+function placeOrder(){
+ if(!cart.length){alert("Please add items to your cart.");return}
+ const name=document.getElementById("customer").value.trim();
+ if(!name){alert("Please enter your name.");return}
+ const payment=document.getElementById("payment").value;
+ const proof=document.getElementById("proof").files[0];
+ if(payment==="UPI"&&!proof){if(!confirm("You have not selected a payment screenshot. Continue anyway?"))return}
+ const total=cart.reduce((s,x)=>s+x.price,0);
+ let msg="NEW ORDER - APNA CHAI WALA%0A";
+ msg+="Name: "+encodeURIComponent(name)+"%0A";
+ msg+="Order type: "+encodeURIComponent(document.getElementById("orderType").value)+"%0A%0A";
+ cart.forEach(x=>{msg+=encodeURIComponent(x.name+" ("+x.size+") - ₹"+x.price)+"%0A"});
+ msg+="%0ATotal: ₹"+total+" + GST%0A";
+ msg+="Payment: "+encodeURIComponent(payment)+"%0A";
+ msg+=payment==="UPI"?"Payment status: Screenshot selected - verification pending%0A":"Payment status: Cash - pending%0A";
+ msg+="Notes: "+encodeURIComponent(document.getElementById("notes").value);
+ msg+="%0A%0APlease confirm this order.";
+ window.open("https://wa.me/"+manager+"?text="+msg,"_blank");
+ if(payment==="UPI"&&proof){
+  alert("WhatsApp will open with the order details. Please attach your payment screenshot in that chat before sending.");
+ }
+}
+renderCategories();renderMenu();updateCart();
+</script>
+</body>
+</html>
